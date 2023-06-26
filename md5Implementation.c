@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <openssl/md5.h>
 
-
 FILE* openFile(char *filename){
     FILE *fp;
     fp = fopen(filename, "rb");
@@ -20,6 +19,7 @@ int getFileSize(FILE* f){
     return size;
 }
 
+// Gera o MD5 de um arquivo
 unsigned char* getMD5(FILE* fp) {
     int size = getFileSize(fp);
     char* buffer = (char*)malloc(size);
@@ -37,11 +37,22 @@ unsigned char* getMD5(FILE* fp) {
     return result;
 }
 
+int compareMD5(unsigned char* md5_1, unsigned char* md5_2){
+    for(int i = 0; i < MD5_DIGEST_LENGTH; i++){
+        if(md5_1[i] != md5_2[i]){
+            return 0;
+        }
+    }
+    return 1;
+}
+
+
 int main(){
     FILE *fp = openFile("capi_estatistica.jpg");
     FILE *fp2 = openFile("capi_psicologia.jpg");
 
     unsigned char *result = getMD5(fp);
+    unsigned char *result2 = getMD5(fp2);
 
     printf("MD5 FILE 1:");
     for(int i = 0; i < MD5_DIGEST_LENGTH; i++){
@@ -49,25 +60,19 @@ int main(){
     }
     printf("\n");
     
-    result = getMD5(fp);
-
-    printf("MD5 FILE 1:");
-    for(int i = 0; i < MD5_DIGEST_LENGTH; i++){
-        printf("%02x", result[i]);
-    }
-
-    printf("\n");
-
-    result = getMD5(fp2);
-
     printf("MD5 FILE 2:");
     for(int i = 0; i < MD5_DIGEST_LENGTH; i++){
-        printf("%02x", result[i]);
+        printf("%02x", result2[i]);
     }
 
-
+    if(compareMD5(result, result2)){
+        printf("\n\nArquivos iguais\n");
+    }else{
+        printf("\n\nArquivos diferentes\n");
+    }
     
     free(result);
+    free(result2);
     fclose(fp);
     fclose(fp2);
 
