@@ -3,13 +3,13 @@
 #include <openssl/md5.h>
 
 FILE* openFile(char *filename){
-    FILE *fp;
-    fp = fopen(filename, "rb");
-    if(fp == NULL){
+    FILE *fileClient;
+    fileClient = fopen(filename, "rb");
+    if(fileClient == NULL){
         printf("Error while opening file %s\n", filename);
         exit(1);
     }
-    return fp;
+    return fileClient;
 }
 
 int getFileSize(FILE* f){
@@ -19,11 +19,26 @@ int getFileSize(FILE* f){
     return size;
 }
 
+/// FUNÇÕES DO SERVIDOR ///
+
+int fileExists(char* filename, char* dirname){
+    FILE *fileClient;
+    fileClient = fopen(filename, "rb");
+    if(fileClient == NULL){
+        return 0;
+    }
+    fclose(fileClient);
+    return 1;
+}
+
+
+//// FUNÇÕES DE MD5 (COMPARTILHADAS) ///
+
 // Gera o MD5 de um arquivo
-unsigned char* getMD5(FILE* fp) {
-    int size = getFileSize(fp);
+unsigned char* getMD5(FILE* fileClient) {
+    int size = getFileSize(fileClient);
     char* buffer = (char*)malloc(size);
-    fread(buffer, size, 1, fp);
+    fread(buffer, size, 1, fileClient);
 
     const unsigned char* data = (const unsigned char*)buffer;
 
@@ -37,6 +52,7 @@ unsigned char* getMD5(FILE* fp) {
     return result;
 }
 
+// Compara dois MD5
 int compareMD5(unsigned char* md5_1, unsigned char* md5_2){
     for(int i = 0; i < MD5_DIGEST_LENGTH; i++){
         if(md5_1[i] != md5_2[i]){
@@ -48,33 +64,35 @@ int compareMD5(unsigned char* md5_1, unsigned char* md5_2){
 
 
 int main(){
-    FILE *fp = openFile("capi_estatistica.jpg");
-    FILE *fp2 = openFile("capi_psicologia.jpg");
+    FILE *fileClient = openFile("capi_filosofa.png"); // Arquivo do cliente
+    FILE *fileServer;   // Arquivo do servidor
 
-    unsigned char *result = getMD5(fp);
-    unsigned char *result2 = getMD5(fp2);
 
-    printf("MD5 FILE 1:");
-    for(int i = 0; i < MD5_DIGEST_LENGTH; i++){
-        printf("%02x", result[i]);
-    }
-    printf("\n");
-    
-    printf("MD5 FILE 2:");
-    for(int i = 0; i < MD5_DIGEST_LENGTH; i++){
-        printf("%02x", result2[i]);
-    }
-
-    if(compareMD5(result, result2)){
-        printf("\n\nArquivos iguais\n");
+    // o diretorio deve ser o diretorio de backup do servidor
+    // o nome do arquivo deve ser enviado em uma mensagem do cliente
+    if(fileExists("capi_filosofa.png", "/server")){
+        // mensagem de "arquivo existe"
+        fileServer = openFile("./server/capi_filosofa.png");
+        
+        unsigned char *result = getMD5(fileClient); // Gera o MD5 Do arquivo do cliente
+        unsigned char *result2 = getMD5(fileServer); // Gera o MD5 Do arquivo do servidor
+        
+        if(compareMD5(result, result2)){
+            printf("Arquivos iguais\n");
+        }else{
+            printf("Arquivos diferentes\n");
+        }
+        
+        free(result);
+        free(result2);
+        fclose(fileServer);
     }else{
-        printf("\n\nArquivos diferentes\n");
+        // mensagem de "arquivo nao existe"
+        printf("Arquivo nao existe\n");
     }
-    
-    free(result);
-    free(result2);
-    fclose(fp);
-    fclose(fp2);
+
+
+    fclose(fileClient);
 
     return 0;
 }
